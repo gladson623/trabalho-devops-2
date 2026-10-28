@@ -1,0 +1,45 @@
+services:
+  web:
+    build: ./app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app/src:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_NAME: loja
+      DB_USER: loja_user
+      DB_PASS: loja_pass
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: loja
+      MYSQL_USER: loja_user
+      MYSQL_PASSWORD: loja_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      - db
+
+volumes:
+  db_data:
