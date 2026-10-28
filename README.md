@@ -71,8 +71,8 @@ Na própria VM, acesse:
 
 A partir de outro computador da rede do laboratório, substitua `localhost` pelo IP da VM:
 
-- Aplicação: `http://IP_DA_VM:8080`
-- phpMyAdmin: `http://IP_DA_VM:8081`
+- Aplicação: `http://172.16.9.66:8080`|
+- phpMyAdmin: `http://172.16.9.66:8081`|
 
 O IP da VM pode ser consultado com:
 
