@@ -1,89 +1,135 @@
-# Trabalho DevOps 2
+# Trabalho DevOps 2 — Deploy automático em VM
 
 ## Integrantes
 
-- **Gladson Coronado dos Santos** — RA: 250293
-- **Gustavo Francisco dos Santos** — RA: 250296
+- Gladson Coronado dos Santos — RA 250293
+- Gustavo Francisco dos Santos — RA 250296
 
-## Descrição
+## Sobre o projeto
 
-Este projeto implementa um CRUD de produtos. A aplicação permite cadastrar, visualizar, editar e excluir produtos, mantendo informações como nome, descrição, preço e estoque.
+Este projeto consiste em uma aplicação CRUD de produtos, permitindo cadastrar, consultar, editar e excluir registros.
 
-A solução utiliza:
+A aplicação utiliza PHP e MySQL, com os serviços organizados por meio do Docker Compose. Para automatizar as atualizações, foi configurado um Runner local do GitHub Actions em uma máquina virtual com Ubuntu Server.
 
-- **PHP 8.3** com Apache para a aplicação web;
-- **MySQL 8.0** para persistência dos dados;
-- **phpMyAdmin** para administração do banco de dados;
-- **Docker e Docker Compose** para criação e execução dos serviços;
-- **GitHub Actions** para automatizar o deploy na máquina virtual;
-- **GitHub Actions Runner self-hosted** instalado localmente na VM do laboratório.
+Dessa forma, quando uma alteração é enviada para a branch principal do repositório, o GitHub Actions executa o workflow na máquina virtual e realiza a atualização da aplicação.
 
-## Estrutura dos serviços
+## 1. Tecnologias utilizadas
 
-O arquivo `docker-compose.yml` inicia três serviços:
+- PHP 8.3 e Apache para executar a aplicação.
+- MySQL 8.0 para armazenar os dados.
+- phpMyAdmin para gerenciamento do banco de dados.
+- Docker para executar os serviços em containers.
+- Docker Compose para organizar os serviços da aplicação.
+- Ubuntu Server como sistema operacional da máquina virtual.
+- GitHub Actions e Self-hosted Runner para automatizar o deploy.
 
-- `web`: aplicação PHP acessível pela porta `8080`;
-- `db`: banco de dados MySQL, com criação inicial da tabela `produtos`;
-- `phpmyadmin`: interface web de administração do MySQL, acessível pela porta `8081`.
+## 2. Organização dos serviços
 
-## Runner local e deploy automático
+O projeto utiliza o Docker Compose para executar os serviços necessários para a aplicação.
 
-O Runner local é um agente do GitHub Actions instalado na VM do laboratório. Ele permanece conectado ao GitHub e aguarda novos trabalhos destinados ao ambiente `self-hosted`. Quando recebe um job, executa os comandos diretamente na VM, utilizando os recursos locais, incluindo o Docker instalado.
+| Serviço | Função | Porta |
+|---|---|---|
+| web | Aplicação PHP com Apache | 8080 |
+| db | Banco de dados MySQL | 3306 (interna) |
+| phpmyadmin | Gerenciamento do banco | 8081 |
 
-A Action está definida em `.github/workflows/deploy.yml` e é executada automaticamente a cada `push` na branch `main`. Também pode ser iniciada manualmente pelo GitHub Actions usando `workflow_dispatch`.
+O serviço `web` disponibiliza a aplicação para acesso pelo navegador. O `db` armazena os dados utilizados pelo CRUD, enquanto o phpMyAdmin permite consultar e administrar o banco de dados.
 
-Durante a execução, a Action:
+## 3. Deploy automático — `deploy.yml`
 
-1. Faz o checkout do código da branch `main`;
-2. Verifica as versões do Docker e do Docker Compose;
-3. Valida a configuração com `docker compose config -q`;
-4. Constrói e inicia os containers com `docker compose up -d --build --remove-orphans`;
-5. Confere o estado dos containers com `docker compose ps`.
+O workflow foi criado para atualizar a aplicação automaticamente na máquina virtual sempre que uma alteração é enviada para a branch `main`.
 
-Para o deploy funcionar, o usuário que executa o Runner deve ter permissão para acessar o Docker, normalmente estando no grupo `docker` da VM.
+### Utilização do Runner local
 
-## Execução local
+```yaml
+runs-on: self-hosted
+```
 
-Com Docker e Docker Compose instalados, execute na raiz do projeto:
+Essa configuração indica que o workflow será executado em um Runner instalado em uma máquina própria. No nosso projeto, utilizamos o Runner instalado na VM Ubuntu, permitindo que os comandos do deploy sejam executados diretamente nela.
+
+### Verificação do Docker
+
+```yaml
+run: |
+  docker --version
+  docker compose version
+```
+
+Antes de iniciar a atualização da aplicação, esse trecho verifica se o Docker e o Docker Compose estão disponíveis na máquina virtual. Assim, conseguimos identificar possíveis problemas antes de executar o deploy.
+
+### Validação da configuração
+
+```yaml
+run: docker compose config -q
+```
+
+Esse comando verifica se o arquivo do Docker Compose está configurado corretamente. Dessa forma, conseguimos identificar erros de configuração antes de tentar iniciar os serviços da aplicação.
+
+### Atualização da aplicação
+
+```yaml
+run: |
+  echo "Iniciando o deploy..."
+  docker compose up -d --build --remove-orphans
+  echo "Deploy executado!"
+```
+
+Esse é o trecho responsável pela atualização da aplicação. Ele solicita a reconstrução das imagens e inicia os serviços em segundo plano.
+
+A opção `-d` mantém os containers executando sem ocupar o terminal. O `--build` solicita a construção das imagens antes de iniciar os serviços, enquanto `--remove-orphans` remove containers que não fazem mais parte da configuração atual do projeto.
+
+Com isso, quando uma alteração é enviada ao GitHub, o Runner utiliza os arquivos atualizados do repositório para reconstruir e iniciar os serviços da aplicação.
+
+### Conferência dos containers
+
+```yaml
+run: docker compose ps
+```
+
+Depois de executar o deploy, esse comando apresenta os containers do projeto e seus respectivos estados. Com isso, conseguimos conferir pelo log do GitHub Actions se os serviços foram iniciados.
+
+## 4. Como acessar a aplicação
+
+Com a máquina virtual ligada e os containers em execução, a aplicação pode ser acessada por outro dispositivo conectado à mesma rede, utilizando o IP da VM e a porta configurada no Docker Compose.
+
+**Aplicação CRUD:**
+
+```text
+http://IP_DA_VM:8080
+```
+
+**phpMyAdmin:**
+
+```text
+http://IP_DA_VM:8081
+```
+
+Substitua `IP_DA_VM` pelo endereço IP atual da máquina virtual.
+
+## 5. Como executar o projeto manualmente
+
+Caso seja necessário iniciar os serviços diretamente pela VM, entre na pasta do projeto e execute:
 
 ```bash
 docker compose up -d --build
 ```
 
-Verifique os containers com:
+Para conferir os containers:
 
 ```bash
 docker compose ps
 ```
 
-Para interromper a aplicação:
+Para acompanhar os logs:
 
 ```bash
-docker compose down
+docker compose logs -f
 ```
 
-## Acesso na VM do laboratório
+## 6. Resultados
 
-Na própria VM, acesse:
+Com o Runner local configurado e o workflow ativo, o processo de atualização deixa de depender de um deploy manual.
 
-- Aplicação: `http://localhost:8080`
-- phpMyAdmin: `http://localhost:8081`
+Quando uma alteração é enviada para a branch `main`, o GitHub Actions inicia a execução no Runner instalado na VM. O workflow prepara os arquivos, verifica a configuração do Docker Compose e executa a atualização dos serviços.
 
-A partir de outro computador da rede do laboratório, substitua `localhost` pelo IP da VM:
-
-- Aplicação: `http://172.16.9.66:8080`|
-- phpMyAdmin: `http://172.16.9.66:8081`|
-
-O IP da VM pode ser consultado com:
-
-```bash
-hostname -I
-```
-
-No phpMyAdmin, utilize as credenciais configuradas no Compose:
-
-- Usuário: `root`
-- Senha: `root`
-- Servidor: `db`
-
-Os dados iniciais dos produtos são criados automaticamente pelo arquivo `db/init.sql` na primeira inicialização do volume do MySQL.
+Dessa forma, conseguimos acompanhar o processo pela aba Actions do GitHub e acessar a aplicação pelo navegador para conferir a versão atualizada.
