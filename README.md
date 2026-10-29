@@ -90,7 +90,15 @@ Depois de executar o deploy, esse comando apresenta os containers do projeto e s
 
 ## 4. Como acessar a aplicação
 
-Com a máquina virtual ligada e os containers em execução, a aplicação pode ser acessada por outro dispositivo conectado à mesma rede, utilizando o IP da VM e a porta configurada no Docker Compose.
+Para descobrir o endereço IP da máquina virtual, acesse o Ubuntu Server e execute o comando:
+
+```bash
+hostname -I
+```
+
+O comando exibirá os endereços IP configurados na máquina. Identifique o IP da interface de rede utilizada para acessar a VM pela rede local.
+
+Depois, utilize o endereço encontrado para acessar a aplicação:
 
 **Aplicação CRUD:**
 
@@ -104,7 +112,12 @@ http://IP_DA_VM:8080
 http://IP_DA_VM:8081
 ```
 
-Substitua `IP_DA_VM` pelo endereço IP atual da máquina virtual.
+Por exemplo, se o IP retornado for `192.168.3.212`, os endereços serão:
+
+- CRUD: `http://192.168.3.212:8080`
+- phpMyAdmin: `http://192.168.3.212:8081`
+
+O computador utilizado para acessar a aplicação precisa estar conectado à mesma rede da máquina virtual, e as portas devem estar liberadas para acesso.
 
 ## 5. Como executar o projeto manualmente
 
